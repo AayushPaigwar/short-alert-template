@@ -4,7 +4,7 @@ A GitHub Actions-based template for Flutter projects using [Shorebird](https://s
 
 ![Flutter](https://img.shields.io/badge/Flutter-Compatible-blue)
 ![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-blue)
-[![Use Template](https://img.shields.io/badge/Use-This%20Template-brightgreen)](https://github.com/new?template_name=short-alert-template&template_owner=AayushPaigwar)
+[![Use Template](https://img.shields.io/badge/Use-This%20Template-brightgreen)](https://github.com/aayushpaigwar/short-alert-template/generate)
 
 ---
 
@@ -25,7 +25,7 @@ You can use this in **two ways**:
 
 ### 🟢 Option 1: Use This Template (Recommended for new projects)
 
-1. Click the **[Use This Template](https://github.com/yourusername/flutter-shorealert-template/generate)** button above ⤴️
+1. Click the **[Use This Template](https://github.com/aayushpaigwar/short-alert-template/generate)** button above ⤴️
 2. Create a new repository from it
 3. Add GitHub Secrets (see below)
 4. Push changes to `main` or `master` branch
