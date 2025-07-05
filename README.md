@@ -4,7 +4,7 @@ A GitHub Actions-based template for Flutter projects using [Shorebird](https://s
 
 ![Flutter](https://img.shields.io/badge/Flutter-Compatible-blue)
 ![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-blue)
-[![Use Template](https://img.shields.io/badge/Use-This%20Template-brightgreen)](https://github.com/yourusername/flutter-shorealert-template/generate)
+[![Use Template](https://img.shields.io/badge/Use-This%20Template-brightgreen)](https://github.com/AayushPaigwar/short-alert-template)
 
 ---
 
