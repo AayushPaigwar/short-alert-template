@@ -1,9 +1,9 @@
-name: 🛑 Shorebird Patch Missing Notifier
+name: 🐦 Shorebird Patch Missing Notifier
 
 on:
   push:
     branches:
-      - master  # ✅ use 'main' if your branch is main
+      - master  # use 'main' if your branch is main
 
 jobs:
   check-patch-missing:
@@ -13,7 +13,7 @@ jobs:
       - name: 📥 Checkout Repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 🔧 Fetch full history instead of shallow clone
+          fetch-depth: 0  # Fetch full history instead of shallow clone
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🐦 Setup Shorebird CLI
@@ -36,7 +36,7 @@ jobs:
           shorebird --version
           
           # Run the patch check logic
-          APP_NAME="Advantage Vidarbha"  # 🔧 Replace with your actual app name
+          APP_NAME="<<SHOREBIRD_APP_NAME>>"  # Replace with your actual app name
           
           echo "🔍 Checking Shorebird patch for app: $APP_NAME"
           
@@ -110,7 +110,7 @@ jobs:
           username: ${{ secrets.EMAIL_USER }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "⚠️ Shorebird Patch Required - Code Changes Detected"
-          to: "aayush.paigwar123@gmail.com"
+          to: "YOUR_MAIL_HERE"
           from: "GitHub Actions <${{ secrets.EMAIL_USER }}>"
           html_body: |
             <!DOCTYPE html>
