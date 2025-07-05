@@ -2,8 +2,11 @@
 
 A GitHub Actions-based template for Flutter projects using [Shorebird](https://shorebird.dev). Automatically detects Dart/YAML code pushes that require patching and sends email alerts if no patch is created.
 
+[![🐦 Shorebird Patch Missing Notifier](https://github.com/AayushPaigwar/short-alert-template/actions/workflows/shorealert.yml/badge.svg)](https://github.com/AayushPaigwar/short-alert-template/actions/workflows/shorealert.yml)
+
 ![Flutter](https://img.shields.io/badge/Flutter-Compatible-blue)
 ![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-blue)
+
 [![Use Template](https://img.shields.io/badge/Use-This%20Template-brightgreen)](https://github.com/aayushpaigwar/short-alert-template/generate)
 
 ---
