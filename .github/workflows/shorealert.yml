@@ -1,0 +1,379 @@
+name: 🛑 Shorebird Patch Missing Notifier
+
+on:
+  push:
+    branches:
+      - master  # ✅ use 'main' if your branch is main
+
+jobs:
+  check-patch-missing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 🔧 Fetch full history instead of shallow clone
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐦 Setup Shorebird CLI
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: 🔐 Authenticate with Shorebird
+        run: |
+          mkdir -p ~/.shorebird
+          echo '${{ secrets.SHOREBIRD_TOKEN }}' > ~/.shorebird/token.json
+
+      - name: 🔍 Check for Missing Patch
+        id: patch_check
+        run: |
+          set -e
+          
+          # Verify Shorebird installation
+          echo "✅ Shorebird CLI installed successfully"
+          shorebird --version
+          
+          # Run the patch check logic
+          APP_NAME="Advantage Vidarbha"  # 🔧 Replace with your actual app name
+          
+          echo "🔍 Checking Shorebird patch for app: $APP_NAME"
+          
+          # Check if shorebird.yaml exists
+          if [ ! -f "shorebird.yaml" ]; then
+              echo "⚠️ shorebird.yaml not found. This might not be a Shorebird project."
+              echo "send_alert=false" >> "$GITHUB_OUTPUT"
+              exit 0
+          fi
+          
+          # Get current commit hash
+          CURRENT_COMMIT=$(git rev-parse HEAD)
+          echo "🔍 Current commit: $CURRENT_COMMIT"
+          
+          # Check if this is the first commit in the repository
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          echo "📊 Total commits in branch: $COMMIT_COUNT"
+          
+          if [ "$COMMIT_COUNT" -eq 1 ]; then
+              echo "📝 This is the first commit in the repository"
+              echo "📧 Skipping email notification for initial commit"
+              echo "send_alert=false" >> "$GITHUB_OUTPUT"
+              exit 0
+          fi
+          
+          # Get the previous commit
+          PREVIOUS_COMMIT=$(git rev-parse HEAD~1)
+          echo "📋 Previous commit: $PREVIOUS_COMMIT"
+          
+          # Check if this push included any Dart/Flutter files
+          CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT $CURRENT_COMMIT)
+          
+          echo "📁 All changed files:"
+          echo "$CHANGED_FILES" | head -20  # Show first 20 files
+          
+          DART_CHANGES=$(echo "$CHANGED_FILES" | grep -E '\.(dart|yaml)$' || true)
+          
+          if [ -n "$DART_CHANGES" ]; then
+              echo "✅ Code changes detected that may require a patch:"
+              echo "$DART_CHANGES"
+              echo "📧 WILL SEND ALERT - Code changes detected!"
+              echo "send_alert=true" >> "$GITHUB_OUTPUT"
+              echo "change_summary<<EOF" >> "$GITHUB_OUTPUT"
+              echo "$DART_CHANGES" >> "$GITHUB_OUTPUT"
+              echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+              echo "ℹ️ No Dart/YAML changes detected. No patch needed."
+              echo "📧 No alert needed - no code changes"
+              echo "send_alert=false" >> "$GITHUB_OUTPUT"
+          fi
+          
+          echo "🔍 Final send_alert value: $(grep 'send_alert=' $GITHUB_OUTPUT || echo 'not set')"
+
+      # Add a test step to verify the condition
+      - name: 🧪 Debug Alert Condition
+        run: |
+          echo "Debug: send_alert = ${{ steps.patch_check.outputs.send_alert }}"
+          if [ "${{ steps.patch_check.outputs.send_alert }}" = "true" ]; then
+            echo "✅ Alert condition met - email will be sent"
+          else
+            echo "❌ Alert condition not met - no email will be sent"
+          fi
+
+      - name: 📧 Send Alert - No Patch Created
+        if: steps.patch_check.outputs.send_alert == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "⚠️ Shorebird Patch Required - Code Changes Detected"
+          to: "aayush.paigwar123@gmail.com"
+          from: "GitHub Actions <${{ secrets.EMAIL_USER }}>"
+          html_body: |
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Shorebird Patch Required</title>
+                <style>
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                        line-height: 1.6;
+                        color: #333;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background-color: #f8f9fa;
+                    }
+                    .container {
+                        background-color: #ffffff;
+                        border-radius: 8px;
+                        padding: 30px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        padding-bottom: 20px;
+                        border-bottom: 2px solid #e9ecef;
+                    }
+                    .header h1 {
+                        color: #dc3545;
+                        margin: 0;
+                        font-size: 24px;
+                    }
+                    .alert-badge {
+                        display: inline-block;
+                        background-color: #dc3545;
+                        color: white;
+                        padding: 6px 16px;
+                        border-radius: 20px;
+                        font-size: 12px;
+                        font-weight: bold;
+                        text-transform: uppercase;
+                        margin-top: 10px;
+                    }
+                    .warning-box {
+                        background-color: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        color: #856404;
+                        padding: 20px;
+                        border-radius: 6px;
+                        margin: 20px 0;
+                        border-left: 4px solid #ffc107;
+                    }
+                    .info-section {
+                        background-color: #f8f9fa;
+                        border-left: 4px solid #007bff;
+                        padding: 15px 20px;
+                        margin: 20px 0;
+                        border-radius: 0 4px 4px 0;
+                    }
+                    .info-item {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 10px;
+                        padding: 8px 0;
+                        border-bottom: 1px solid #dee2e6;
+                    }
+                    .info-item:last-child {
+                        border-bottom: none;
+                        margin-bottom: 0;
+                    }
+                    .info-label {
+                        font-weight: 600;
+                        color: #495057;
+                        min-width: 120px;
+                    }
+                    .info-value {
+                        color: #333;
+                        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                        background-color: #e9ecef;
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                        font-size: 13px;
+                    }
+                    .changed-files {
+                        background-color: #d1ecf1;
+                        border: 1px solid #bee5eb;
+                        color: #0c5460;
+                        padding: 15px;
+                        border-radius: 6px;
+                        margin: 20px 0;
+                    }
+                    .file-list {
+                        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                        font-size: 13px;
+                        background-color: #f8f9fa;
+                        padding: 10px;
+                        border-radius: 4px;
+                        white-space: pre-line;
+                        margin-top: 10px;
+                    }
+                    .action-section {
+                        background-color: #d4edda;
+                        border: 1px solid #c3e6cb;
+                        color: #155724;
+                        padding: 20px;
+                        border-radius: 6px;
+                        margin: 20px 0;
+                    }
+                    .code-block {
+                        background-color: #f8f9fa;
+                        border: 1px solid #e9ecef;
+                        color: #333;
+                        padding: 15px;
+                        border-radius: 4px;
+                        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                        font-size: 13px;
+                        margin: 10px 0;
+                        white-space: pre;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 30px;
+                        padding-top: 20px;
+                        border-top: 1px solid #e9ecef;
+                        color: #6c757d;
+                        font-size: 12px;
+                    }
+                    .github-link {
+                        display: inline-block;
+                        background-color: #24292e;
+                        color: white;
+                        text-decoration: none;
+                        padding: 10px 20px;
+                        border-radius: 6px;
+                        margin: 10px 5px;
+                        font-weight: 500;
+                    }
+                    .github-link:hover {
+                        background-color: #1b1f23;
+                    }
+                    .patch-btn {
+                        background-color: #28a745;
+                        color: white;
+                        text-decoration: none;
+                        padding: 12px 24px;
+                        border-radius: 6px;
+                        margin: 10px 5px;
+                        font-weight: 600;
+                        display: inline-block;
+                    }
+                    .status-indicator {
+                        display: inline-block;
+                        width: 12px;
+                        height: 12px;
+                        border-radius: 50%;
+                        margin-right: 8px;
+                    }
+                    .status-warning { background-color: #ffc107; }
+                    .status-info { background-color: #17a2b8; }
+                    .status-danger { background-color: #dc3545; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🚨 Shorebird Patch Required</h1>
+                        <div class="alert-badge">Action Required</div>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <strong>⚠️ Code changes detected that may require a Shorebird patch!</strong><br>
+                        Your latest push contains modifications to Dart or YAML files that might need to be distributed as a patch.
+                    </div>
+                    
+                    <div class="info-section">
+                        <h3 style="margin-top: 0; color: #495057;">📋 Change Details</h3>
+                        
+                        <div class="info-item">
+                            <span class="info-label">
+                                <span class="status-indicator status-info"></span>Repository:
+                            </span>
+                            <span class="info-value">${{ github.repository }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">
+                                <span class="status-indicator status-info"></span>Branch:
+                            </span>
+                            <span class="info-value">${{ github.ref_name }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">
+                                <span class="status-indicator status-warning"></span>Commit:
+                            </span>
+                            <span class="info-value">${{ github.sha }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label">
+                                <span class="status-indicator status-info"></span>Pushed By:
+                            </span>
+                            <span class="info-value">${{ github.actor }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="changed-files">
+                        <h4 style="margin-top: 0; color: #0c5460;">📁 Files Changed:</h4>
+                        <div class="file-list">${{ steps.patch_check.outputs.change_summary }}</div>
+                    </div>
+                    
+                    <div class="action-section">
+                        <h4 style="margin-top: 0; color: #155724;">🛠️ Recommended Actions:</h4>
+                        <p>Please consider running a Shorebird patch to deploy these changes:</p>
+                        
+                        <div class="code-block">shorebird patch android</div>
+                        <p style="text-align: center; margin: 5px 0; color: #6c757d; font-size: 14px;">— OR —</p>
+                        <div class="code-block">shorebird patch ios</div>
+                        
+                        <p style="margin-bottom: 0; font-size: 14px;">
+                            📖 <strong>Need help?</strong> Check the <a href="https://docs.shorebird.dev" style="color: #155724;">Shorebird documentation</a> for detailed instructions.
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}" class="github-link">
+                            👀 View Changes
+                        </a>
+                        <a href="${{ github.server_url }}/${{ github.repository }}/actions" class="github-link">
+                            📊 View Workflow
+                        </a>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>🤖 This is an automated notification from GitHub Actions</p>
+                        <p>Generated on: ${{ github.event.head_commit.timestamp }}</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+
+      # Remove this test email step after confirming the workflow works
+      # - name: 📧 Test Email (Always Send) - REMOVE AFTER TESTING
+      #   if: always()
+      #   uses: dawidd6/action-send-mail@v3
+      #   with:
+      #     server_address: smtp.gmail.com
+      #     server_port: 465
+      #     secure: true
+      #     username: ${{ secrets.EMAIL_USER }}
+      #     password: ${{ secrets.EMAIL_PASSWORD }}
+      #     subject: "🧪 Test - Workflow Executed"
+      #     to: "aayush.paigwar123@gmail.com"
+      #     from: "GitHub Actions <${{ secrets.EMAIL_USER }}>"
+      #     body: |
+      #       This is a test email to verify email functionality.
+            
+      #       Workflow executed at: ${{ github.event.head_commit.timestamp }}
+      #       Commit: ${{ github.sha }}
+      #       Send Alert: ${{ steps.patch_check.outputs.send_alert }}
+      #       Total Commits: ${{ github.run_number }}
+            
+      #       If you receive this email, the email configuration is working.
